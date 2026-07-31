@@ -16,7 +16,7 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.error("⚠️ Chiave API di Gemini non configurata! Inseriscila nei Secrets di Streamlit.")
 
-# Funzione avanzata per interrogare Gemini AI
+# Funzione avanzata per interrogare Gemini AI (Modello Aggiornato)
 def analizza_pianta_con_ia(nome_pianta):
     prompt = f"""
     Sei un luminare della botanica e dell'agronomia. Analizza la pianta richiesta per la propagazione tramite talea.
@@ -34,11 +34,11 @@ def analizza_pianta_con_ia(nome_pianta):
         "innaffiamento": "Frequenza e metodo di irrigazione per la talea",
         "metodo_veloce": "La tecnica di taleaggio più rapida ed efficace per questa specie",
         "terreno_ideale": "Composizione ideale del terriccio in percentuali",
-        "finestra_stagionale": "Analisi di come si comporterà la talea nei prossimi 3 mesi in base alla stagione attuale"
+        "finestra_stagionale": "Analisi di come si comporterà la talea nei primi 3 mesi in base alla stagione attuale"
     }}
     """
     try:
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         text = response.text.strip()
         if text.startswith("```"):
@@ -132,7 +132,7 @@ with tab1:
             nuovo_id = f"TL-{data_oggi.strftime('%y%m%d')}-{len(st.session_state.diario_talee)+1}"
             
             nuova_talea = {
-                "id": nuevo_id,
+                "id": nuovo_id,
                 "pianta": d['nome_corretto'],
                 "data_inizio": data_oggi.strftime("%d/%m/%Y"),
                 "data_fine_obj": data_fine,
@@ -188,7 +188,7 @@ with tab3:
     st.header("🧪 Calcolatore di Substrato Personalizzato")
     st.write("Inserisci gli inerti e i materiali che hai fisicamente a disposizione nella tua campagna:")
     
-    materiali = st.get_values if "materiali" in locals() else st.multiselect(
+    materiali = st.multiselect(
         "Seleziona cosa hai a disposizione intorno a te:",
         ["Terra di campo comune", "Sabbia di fiume / Lavata", "Pietra pomice", "Lapillo vulcanico", "Compost autoprodotto", "Terriccio universale vecchio", "Argilla espansa", "Perlite"]
     )
@@ -206,7 +206,7 @@ with tab3:
                  
                  Generami una ricetta pratica in tazze o parti usando SOLO i materiali che ho a disposizione, spiegando perché questa combinazione si avvicina all'obiettivo biologico della pianta. Sii breve (max 80 parole).
                  """
-                 model = genai.GenerativeModel('models/gemini-1.5-flash')
+                 model = genai.GenerativeModel('gemini-2.5-flash')
                  response = model.generate_content(prompt_sub)
                  st.markdown("### 🧑‍🔬 La tua Ricetta su Misura:")
                  st.info(response.text)
@@ -214,4 +214,3 @@ with tab3:
         st.write("⚠️ Seleziona almeno un materiale per calcolare la ricetta.")
     else:
         st.write("⚠️ Cerca e seleziona prima una pianta nel Tab 1 per poterne calcolare il substrato su misura.")
-            
