@@ -1,8 +1,8 @@
 import streamlit as st
 import datetime
-import google.generativeai as genai
 import json
 import urllib.parse
+import requests
 
 # Configurazione della pagina ottimizzata per smartphone
 st.set_page_config(page_title="BioTalee AI Ultra", page_icon="🌵", layout="centered")
@@ -12,12 +12,18 @@ st.subheader("Assistente Agronomico d'Avanguardia per la Campagna")
 
 # CONFIGURAZIONE CHIAVE API GEMINI
 if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    API_KEY = st.secrets["GEMINI_API_KEY"]
 else:
     st.error("⚠️ Chiave API di Gemini non configurata! Inseriscila nei Secrets di Streamlit.")
+    API_KEY = None
 
-# Funzione avanzata per interrogare Gemini AI (Versione Stabile Gratuita)
+# Funzione con chiamata di rete diretta (Senza librerie difettose)
 def analizza_pianta_con_ia(nome_pianta):
+    if not API_KEY:
+        return None
+        
+    url = f"https://googleapis.com{API_KEY}"
+    
     prompt = f"""
     Sei un luminare della botanica e dell'agronomia. Analizza la pianta richiesta per la propagazione tramite talea.
     Pianta: {nome_pianta}
@@ -37,18 +43,23 @@ def analizza_pianta_con_ia(nome_pianta):
         "finestra_stagionale": "Analisi di come si comporterà la talea nei primi 3 mesi in base alla stagione attuale"
     }}
     """
+    
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    headers = {'Content-Type': 'application/json'}
+    
     try:
-        # Modello con piano gratuito universale garantito senza inserire carte di credito
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        text = response.text.strip()
+        response = requests.post(url, headers=headers, json=payload)
+        res_json = response.json()
+        text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
+        
         if text.startswith("```"):
-            text = text.split("```")
-            if text.startswith("json"):
-                text = text[4:]
+            lines = text.split("\n")
+            if lines[0].startswith("```json") or lines[0].startswith("```"):
+                text = "\n".join(lines[1:-1])
+                
         return json.loads(text.strip())
     except Exception as e:
-        st.error(f"Errore nell'analisi IA: {e}")
+        st.error(f"Errore di rete o di analisi dei dati botanici. Riprova tra qualche istante.")
         return None
 
 # Funzione per generare il link di Google Calendar
@@ -66,7 +77,7 @@ def crea_link_google_calendar(titolo, data_radicazione, note):
     }
     return f"{base_url}&{urllib.parse.urlencode(params)}"
 
-# Inizializzazione del diario nello stato della sessione
+# Inizializzazione del diario
 if "diario_talee" not in st.session_state:
     st.session_state.diario_talee = []
 
@@ -200,17 +211,16 @@ with tab3:
         
         if st.button("⚖️ Calcola Ricetta Volumetrica con i miei ingredienti"):
             with st.spinner("Gemini sta bilanciando le proporzioni..."):
-                 prompt_sub = f"""
-                 Devo fare il substrato per una talea di {pianta_target}. 
-                 Il suo terreno ideale teorico sarebbe: {terreno_teorico}.
-                 Ho a disposizione solo questi materiali: {', '.join(materiali)}.
-                 
-                 Generami una ricetta pratica in tazze o parti usando SOLO i materiali che ho a disposizione, spiegando perché questa combinazione si avvicina all'obiettivo biologico della pianta. Sii breve (max 80 parole).
-                 """
-                 model = genai.GenerativeModel('gemini-1.5-flash')
-                 response = model.generate_content(prompt_sub)
-                 st.markdown("### 🧑‍🔬 La tua Ricetta su Misura:")
-                 st.info(response.text)
+                 if API_KEY:
+                     url_sub = f"https://googleapis.com{API_KEY}"
+                     prompt_sub = f"Devo fare il substrato per una talea di {pianta_target}. Il terreno ideale sarebbe: {terreno_teorico}. Ho solo questi materiali: {', '.join(materiali)}. Generami una ricetta in tazze o parti usando solo questi materiali, spiegando perché. Sii breve (max 80 parole)."
+                     payload_sub = {"contents": [{"parts": [{"text": prompt_sub}]}]}
+                     try:
+                         response_sub = requests.post(url_sub, headers={'Content-Type': 'application/json'}, json=payload_sub)
+                         st.markdown("### 🧑‍🔬 La tua Ricetta su Misura:")
+                         st.info(response_sub.json()['candidates'][0]['content']['parts'][0]['text'])
+                     except:
+                         st.error("Errore nel calcolo del substrato.")
     elif not materiali:
         st.write("⚠️ Seleziona almeno un materiale per calcolare la ricetta.")
     else:
