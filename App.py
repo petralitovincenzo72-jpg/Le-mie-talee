@@ -17,51 +17,48 @@ else:
     st.error("⚠️ Chiave API di Gemini non configurata! Inseriscila nei Secrets di Streamlit.")
     API_KEY = None
 
-# Funzione con chiamata di rete diretta corretta e pulizia JSON avanzata
+# Funzione con vincolo strutturale nativo del server di Google
 def analizza_pianta_con_ia(nome_pianta):
     if not API_KEY:
         return None
         
     url = f"https://googleapis.com{API_KEY}"
     
-    prompt = f"""
-    Sei un luminare della botanica e dell'agronomia. Analizza la pianta richiesta per la propagazione tramite talea.
-    Pianta: {nome_pianta}
+    prompt = f"Analizza la riproduzione tramite talea della pianta: {nome_pianta}"
     
-    Rispondi ESCLUSIVAMENTE con un oggetto JSON valido. Non inserire testo prima o dopo il JSON, non usare markdown, non usare i tre backtick di formattazione del codice.
-    Formato richiesto:
-    {{
-        "nome_corretto": "Nome comune e scientifico",
-        "temp_ottima": 22,
-        "umidita_ottima": 60,
-        "giorni_base": 25,
-        "tipo_bio": "grassa" o "normale",
-        "esposizione": "Descrizione dell'esposizione solare ideale",
-        "innaffiamento": "Frequenza e metodo di irrigazione per la talea",
-        "metodo_veloce": "La tecnica di taleaggio più rapida ed efficace per questa specie",
-        "terreno_ideale": "Composizione ideale del terriccio in percentuali",
-        "finestra_stagionale": "Analisi di come si comporterà la talea nei primi 3 mesi in base alla stagione attuale"
-    }}
-    """
-    
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    headers = {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+    # Vincolo nativo del server: forza Gemini a rispondere solo in formato dati puro
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "OBJECT",
+                "properties": {
+                    "nome_corretto": {"type": "STRING"},
+                    "temp_ottima": {"type": "INTEGER"},
+                    "umidita_ottima": {"type": "INTEGER"},
+                    "giorni_base": {"type": "INTEGER"},
+                    "tipo_bio": {"type": "STRING"},
+                    "esposizione": {"type": "STRING"},
+                    "innaffiamento": {"type": "STRING"},
+                    "metodo_veloce": {"type": "STRING"},
+                    "terreno_ideale": {"type": "STRING"},
+                    "finestra_stagionale": {"type": "STRING"}
+                },
+                "required": ["nome_corretto", "temp_ottima", "umidita_ottima", "giorni_base", "tipo_bio", "esposizione", "innaffiamento", "metodo_veloce", "terreno_ideale", "finestra_stagionale"]
+            }
+        }
     }
+    
+    headers = {'Content-Type': 'application/json'}
     
     try:
         response = requests.post(url, headers=headers, json=payload)
         res_json = response.json()
         text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
-        
-        # Sistema di pulizia totale da blocchi markdown ```json ... ```
-        if text.startswith("```"):
-            text = text.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
-                
         return json.loads(text)
     except Exception as e:
-        st.error("Errore temporaneo nei server di calcolo. Verifica la correttezza del nome e riprova.")
+        st.error("I server di calcolo non hanno risposto correttamente. Verifica la connessione e riprova.")
         return None
 
 # Funzione per generare il link di Google Calendar
