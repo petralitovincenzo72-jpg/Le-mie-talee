@@ -17,7 +17,7 @@ else:
     st.error("⚠️ Chiave API di Gemini non configurata! Inseriscila nei Secrets di Streamlit.")
     API_KEY = None
 
-# Funzione con chiamata di rete diretta (Senza librerie difettose)
+# Funzione con chiamata di rete diretta corretta e pulizia JSON avanzata
 def analizza_pianta_con_ia(nome_pianta):
     if not API_KEY:
         return None
@@ -28,7 +28,7 @@ def analizza_pianta_con_ia(nome_pianta):
     Sei un luminare della botanica e dell'agronomia. Analizza la pianta richiesta per la propagazione tramite talea.
     Pianta: {nome_pianta}
     
-    Rispondi ESCLUSIVAMENTE con un oggetto JSON valido. Non inserire testo prima o dopo il JSON, non usare markdown.
+    Rispondi ESCLUSIVAMENTE con un oggetto JSON valido. Non inserire testo prima o dopo il JSON, non usare markdown, non usare i tre backtick di formattazione del codice.
     Formato richiesto:
     {{
         "nome_corretto": "Nome comune e scientifico",
@@ -45,21 +45,23 @@ def analizza_pianta_con_ia(nome_pianta):
     """
     
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    headers = {'Content-Type': 'application/json'}
+    headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+    }
     
     try:
         response = requests.post(url, headers=headers, json=payload)
         res_json = response.json()
         text = res_json['candidates'][0]['content']['parts'][0]['text'].strip()
         
+        # Sistema di pulizia totale da blocchi markdown ```json ... ```
         if text.startswith("```"):
-            lines = text.split("\n")
-            if lines[0].startswith("```json") or lines[0].startswith("```"):
-                text = "\n".join(lines[1:-1])
+            text = text.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
                 
-        return json.loads(text.strip())
+        return json.loads(text)
     except Exception as e:
-        st.error(f"Errore di rete o di analisi dei dati botanici. Riprova tra qualche istante.")
+        st.error("Errore temporaneo nei server di calcolo. Verifica la correttezza del nome e riprova.")
         return None
 
 # Funzione per generare il link di Google Calendar
@@ -224,4 +226,4 @@ with tab3:
     elif not materiali:
         st.write("⚠️ Seleziona almeno un materiale per calcolare la ricetta.")
     else:
-        st.write("⚠️ Cerca e seleziona prima una pianta nel Tab 1 per poterne calcolare il substrato su misura.")
+        st.write("⚠️ Cacciatori di piante: Cerca prima una pianta nel Tab 1 per poterne calcolare il substrato su misura.")
