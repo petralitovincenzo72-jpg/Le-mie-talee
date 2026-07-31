@@ -38,7 +38,7 @@ def analizza_pianta_con_ia(nome_pianta):
     }}
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         response = model.generate_content(prompt)
         text = response.text.strip()
         if text.startswith("```"):
@@ -206,7 +206,7 @@ with tab3:
                  
                  Generami una ricetta pratica in tazze o parti usando SOLO i materiali che ho a disposizione, spiegando perché questa combinazione si avvicina all'obiettivo biologico della pianta. Sii breve (max 80 parole).
                  """
-                 model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                 model = genai.GenerativeModel('models/gemini-1.5-flash')
                  response = model.generate_content(prompt_sub)
                  st.markdown("### 🧑‍🔬 La tua Ricetta su Misura:")
                  st.info(response.text)
