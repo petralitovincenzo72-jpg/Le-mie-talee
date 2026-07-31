@@ -16,7 +16,7 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.error("⚠️ Chiave API di Gemini non configurata! Inseriscila nei Secrets di Streamlit.")
 
-# Funzione avanzata per interrogare Gemini AI (Modello Corretto)
+# Funzione avanzata per interrogare Gemini AI (Versione Stabile Gratuita)
 def analizza_pianta_con_ia(nome_pianta):
     prompt = f"""
     Sei un luminare della botanica e dell'agronomia. Analizza la pianta richiesta per la propagazione tramite talea.
@@ -38,8 +38,8 @@ def analizza_pianta_con_ia(nome_pianta):
     }}
     """
     try:
-        # Modello di punta definitivo e attivo
-        model = genai.GenerativeModel('gemini-2.5-pro')
+        # Modello con piano gratuito universale garantito senza inserire carte di credito
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         text = response.text.strip()
         if text.startswith("```"):
@@ -83,7 +83,7 @@ with tab1:
             with st.spinner("L'IA sta estraendo i dati biologici..."):
                 risultato = analizza_pianta_con_ia(pianta_input)
                 if risultato:
-                    st.session_state.pianta_focus = resultado
+                    st.session_state.pianta_focus = risultato
                     st.success(f"Profilo caricato per: {risultato['nome_corretto']}")
     if "pianta_focus" in st.session_state:
         d = st.session_state.pianta_focus
@@ -180,7 +180,7 @@ with tab2:
                         st.session_state.diario_talee[idx]["stato"] = "Radicata con successo! 🥳"
                         st.rerun()
                 with col2:
-                    if t.button("❌ Marcita", key=f"morta_{idx}"):
+                    if st.button("❌ Marcita", key=f"morta_{idx}"):
                         st.session_state.diario_talee[idx]["stato"] = "Non riuscita 🪵"
                         st.rerun()
 
@@ -207,7 +207,7 @@ with tab3:
                  
                  Generami una ricetta pratica in tazze o parti usando SOLO i materiali che ho a disposizione, spiegando perché questa combinazione si avvicina all'obiettivo biologico della pianta. Sii breve (max 80 parole).
                  """
-                 model = genai.GenerativeModel('gemini-2.5-pro')
+                 model = genai.GenerativeModel('gemini-1.5-flash')
                  response = model.generate_content(prompt_sub)
                  st.markdown("### 🧑‍🔬 La tua Ricetta su Misura:")
                  st.info(response.text)
